@@ -15,33 +15,37 @@ const parseHtml = (html) => {
   metadata.images = [];
   $("img").each(function () {
     // console.log("img src >>", $(this).attr("src"));
-    metadata.images.push($(this).attr("src"));
+    imageUrl = $(this).attr("src");
+    if (!metadata.images.includes(imageUrl)) {
+      metadata.images.push(imageUrl);
+    }
   });
-  console.log("metadata === ", metadata);
+  // console.log("metadata === ", metadata);
 
   return metadata;
 };
 
 const fetchHtml = async (url) => {
-  return puppeteer
-    .launch()
-    .then(function (browser) {
-      return browser.newPage();
-    })
-    .then(function (page) {
-      return page.goto(url).then(function () {
-        return page.content();
-      });
-    })
-    .then(function (html) {
-      require("fs").writeFile(__dirname + "/htmlPage.html", html, (err) => {});
-      return { html };
-    })
-    .catch(function (err) {
-      console.log("err ---> ", err);
+  try {
+    const browser = await puppeteer.launch();
+    let page = await browser.newPage();
+    await page.goto(url);
+    let html = await page.content();
+    html = html && html.toString();
+    // console.log("html -- ", typeof html);
+    browser.close();
 
-      return { error: err };
-    });
+    // use this to write entire html + js  data to a file
+    // and then use it again and again instead of making repeated network calls with puppeteer
+    // when you require the html file make sure to convert to string
+    // require("fs").writeFile(__dirname + "/htmlPage.html", html, (err) => {});
+
+    return { html };
+  } catch (err) {
+    console.log("err ---> ", err);
+
+    return { error: err };
+  }
 };
 
 const scrapMetadata = async ({ url }) => {
